@@ -4,10 +4,10 @@ on: [pull_request, push]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v4
-    - run: pip install .
-    - run: pip install -r requirements-testing.txt
+    - run: pip install --break-system-packages .
+    - run: pip install --break-system-packages -r requirements-testing.txt
     - run: pytest tests
