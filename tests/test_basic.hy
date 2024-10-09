@@ -4,6 +4,7 @@
 (require
   hyrule [meth])
 (import
+  re
   lxml.html [document-fromstring :as as-html]
   mechanicalsoup
   werkzeug
@@ -40,12 +41,13 @@
       @db-path (/ tmp-path "example.sqlite")
       @callback None
       @previous-output None
-      @cookie-id None)
+      @cookie-id None
+      @run-args (.copy ex))
     (thoughtforms.db.initialize @db-path)
     None)
 
   (meth run [form-actions-f]
-    (setv post-params (when @previous-output
+    (setv post-params (when (and form-actions-f @previous-output)
       (setv browser (mechanicalsoup.StatefulBrowser))
       (import warnings) (with [(warnings.catch-warnings)]
         ; https://bugs.launchpad.net/beautifulsoup/+bug/2076897
@@ -58,7 +60,7 @@
       (dict (:data (.get-request-kwargs browser form.form "x")))))
     (setv [cookie-id @previous-output] (thoughtforms.Task.run
        @callback
-       #** ex
+       #** @run-args
        :db-path @db-path
        :cookie-id @cookie-id
        :post-params post-params))
@@ -73,7 +75,8 @@
   (TaskFixture tmp-path))
 
 (defmacro run-task [#* form-actions-body]
-  `(.run tasker (fn [form] ~@form-actions-body)))
+  `(.run tasker ~(when form-actions-body
+    `(fn [form] ~@form-actions-body))))
 
 
 (defn test-minimal-task [tasker]
@@ -141,6 +144,51 @@
   (assert (= #x"input[@name = 'cc']/@value" "test study")))
     ; This is the completion code, which is needed for submission to
     ; Prolific.
+
+
+(defn test-shuffle [tasker]
+
+  (hy.I.random.seed "shuffle")
+  (setv objs "abcdefg")
+  (setv shuffled-to "cadfgbe")
+  (setv shuffled-to-2 "gbedfca")
+
+  (setv tasker.callback (fn [task page]
+    (.consent-form task)
+    (page 'continue "cpage"
+       (E.p (+ "Shuffled items: " (.join ""
+         (.shuffle task "perm" objs)))))
+    (.complete task)))
+
+  ; The output to `shuffle` should be a premutation of the input.
+  (run-task)
+  (defn get-shuf [output]
+    (.group (re.search "Shuffled items: ([a-z]+)" output) 1))
+  (assert (=
+    (get-shuf (run-task
+      (.set form "consent-statement" "i consent")))
+    shuffled-to))
+  ; The stored premutation index `perm` should be an approriate integer.
+  (setv perm (get (.read-db tasker) "data" #(1 "perm") "v"))
+  (assert (is (type perm) int))
+  (assert (<= 0 perm (- (hy.I.math.factorial (len objs)) 1)))
+  ; Getting the page again should yield the same permutation.
+  (assert (=
+    (get-shuf (run-task))
+    shuffled-to))
+
+  ; A different subject, however, should be able to see a new
+  ; permutation.
+  (setv (. tasker run-args ["prolific_pid"]) "cafed00d")
+  (setv tasker.cookie-id None)
+  (run-task)
+  (assert (=
+    (get-shuf (run-task
+      (.set form "consent-statement" "i consent")))
+    shuffled-to-2))
+  (assert (=
+    (get-shuf (run-task))
+    shuffled-to-2)))
 
 
 (defn test-wsgi-application [tmp-path]

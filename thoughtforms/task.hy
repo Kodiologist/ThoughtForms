@@ -12,7 +12,8 @@
   hashlib [sha256]
   html [escape :as hesc]
   thoughtforms.html [E RawHTML ecat render-elem]
-  thoughtforms.db [DEFAULT-SQLITE-TIMEOUT-SECONDS])
+  thoughtforms.db [DEFAULT-SQLITE-TIMEOUT-SECONDS]
+  thoughtforms.util [nth-permutation])
 (setv  T True  F False)
 
 ;; * Utility
@@ -152,6 +153,23 @@
     (@generate-page
       (getattr @, (+ "page__" (hy.mangle ptype)))
       #* args #** kwargs))
+
+  (meth shuffle [k iterable]
+    "Return a tuple giving the elements of `iterable` in a random order.
+    The permutation is randomized per-subject and saved to `k`."
+
+    (setv iterable (tuple iterable))
+    (unless (in k @data)
+      (setv t (int (time)))
+      (setv v (hy.I.random.randrange
+        (- (hy.I.math.factorial (len iterable)) 1)))
+      (setv (get @data k) (TaskDataRecord v t t))
+      (with-db (.execute db
+        "insert or ignore into TaskData
+            (subject, k, v, first_sent_time, received_time)
+            values (?, ?, jsonb(?), ?, ?)"
+        [@subject k (json.dumps v :separators ",:") t t])))
+    (nth-permutation iterable (len iterable) (. @data [k] v)))
 
 ;; *** Page types
 
