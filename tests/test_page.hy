@@ -114,6 +114,7 @@
   (P.bad :integer "-1.2")
   (P.bad :integer "-1.")
   (P.bad :integer "-1.0")
+  (P.bad :integer "-1 -1")
   (P.bad :integer "3")
     ; `:sign` is enforced.
   (P.bad :integer "-1,000"))
