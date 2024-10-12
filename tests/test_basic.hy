@@ -157,7 +157,7 @@
     (.consent-form task)
     (page 'continue "cpage"
        (E.p (+ "Shuffled items: " (.join ""
-         (.shuffle task "perm" objs)))))
+         (.shuffle task "the-perm" objs)))))
     (.complete task)))
 
   ; The output to `shuffle` should be a premutation of the input.
@@ -168,8 +168,8 @@
     (get-shuf (run-task
       (.set form "consent-statement" "i consent")))
     shuffled-to))
-  ; The stored premutation index `perm` should be an approriate integer.
-  (setv perm (get (.read-db tasker) "data" #(1 "perm") "v"))
+  ; The stored premutation index `the_perm` should be an approriate integer.
+  (setv perm (get (.read-db tasker) "data" #(1 "the_perm") "v"))
   (assert (is (type perm) int))
   (assert (<= 0 perm (- (hy.I.math.factorial (len objs)) 1)))
   ; Getting the page again should yield the same permutation.

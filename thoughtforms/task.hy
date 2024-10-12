@@ -158,6 +158,7 @@
     "Return a tuple giving the elements of `iterable` in a random order.
     The permutation is randomized per-subject and saved to `k`."
 
+    (setv k (hy.mangle k))
     (setv iterable (tuple iterable))
     (unless (in k @data)
       (setv t (int (time)))
