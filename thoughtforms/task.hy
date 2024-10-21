@@ -163,7 +163,7 @@
     (unless (in k @data)
       (setv t (int (time)))
       (setv v (hy.I.random.randrange
-        (- (hy.I.math.factorial (len iterable)) 1)))
+        (hy.I.math.factorial (len iterable))))
       (setv (get @data k) (TaskDataRecord v t t))
       (with-db (.execute db
         "insert or ignore into TaskData
