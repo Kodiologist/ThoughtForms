@@ -14,7 +14,7 @@ setuptools.setup(
         'hy >= 1',
         'hyrule >= 0.7.0'],
     packages = setuptools.find_packages(),
-    package_data = dict(thoughtforms = [
+    package_data = dict(thoughtforms = ['schema.sql'] + [
         str(p.relative_to('thoughtforms'))
         for p in Path('thoughtforms').rglob('*.hy')]),
     classifiers = [

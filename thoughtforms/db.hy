@@ -9,6 +9,8 @@
 
 
 (setv DEFAULT-SQLITE-TIMEOUT-SECONDS (* 3 60))
+(setv SCHEMA (.read-text (/ (. (Path __file__) parent) "schema.sql")))
+
 
 (defn call-with-db [path timeout f]
   (setv db (sqlite3.connect
@@ -46,34 +48,3 @@
         :v (when (:v row) (json.loads (:v row)))
         :time1 (:time1 row)
         :time2 (:time2 row)))))))
-
-
-(setv SCHEMA "
-  pragma journal_mode = wal;
-
-  create table Subjects
-     (subject                           integer primary key,
-      cookie_hash         blob          not null unique,
-      prolific_pid        blob          not null unique,
-      prolific_study      blob          not null
-        references ProlificStudies(prolific_study),
-      ip                  text          not null,
-      user_agent          text          not null,
-      consented_time      integer       not null,
-      completed_time      integer) strict;
-
-  create table ProlificStudies
-     (prolific_study      blob          primary key,
-      completion_code     text          not null) strict, without rowid;
-
-  insert into ProlificStudies values (X'deadbeef', 'test study');
-
-  create table TaskData(
-      subject             integer not null
-          references Subjects(subject),
-      k                   text not null,
-      v                   blob,
-        -- `v` values should be in SQLite's JSONB format.
-      first_sent_time     integer not null,
-      received_time       integer,
-      primary key (subject, k)) strict, without rowid;")
