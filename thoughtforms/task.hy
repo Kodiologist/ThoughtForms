@@ -68,10 +68,10 @@
         (raise (ValueError "The task callback exited with no output")))))
 
   (defmacro with-db [#* body]
-    `(hy.I.thoughtforms/db.call-with-db
+    `(hy.I.thoughtforms/db.call
       self.db-path
-      self.sqlite-timeout-seconds
-      (fn [db] ~@body)))
+      (fn [db] ~@body)
+      self.sqlite-timeout-seconds))
 
   (meth consent-form []
     "Show the consent form. This should be called before any other

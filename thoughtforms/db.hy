@@ -12,7 +12,8 @@
 (setv SCHEMA (.read-text (/ (. (Path __file__) parent) "schema.sql")))
 
 
-(defn call-with-db [path timeout f]
+(defn call [path f [timeout DEFAULT-SQLITE-TIMEOUT-SECONDS]]
+  "Open the database, call `f` on it, and close it."
   (setv db (sqlite3.connect
     :isolation-level None
     :timeout timeout
@@ -27,12 +28,12 @@
 (defn initialize [path]
   "Erase any existing database at `path` and create a new one."
   (.unlink (Path path) :missing-ok T)
-  (call-with-db path DEFAULT-SQLITE-TIMEOUT-SECONDS (fn [db]
+  (call path (fn [db]
     (.executescript db SCHEMA))))
 
 (defn read [path]
   "Read in all the database contents as dictionaries."
-  (call-with-db path DEFAULT-SQLITE-TIMEOUT-SECONDS (fn [db] (dict
+  (call path (fn [db] (dict
     :subjects (dfor
       row (.execute db "select * from Subjects order by subject")
       (:subject row) (dfor
