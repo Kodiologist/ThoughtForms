@@ -379,6 +379,7 @@
 
 (defn wsgi-application [callback *
     [cookie-path "/"]
+    [cookie-max-age (* 24 60 60)]
     #** kwargs]
 
   "Create a WSGI application callback via Werkzeug. `kwargs` are
@@ -408,7 +409,7 @@
       (.set-cookie resp
         :key COOKIE-NAME
         :value (.hex cookie-id)
-        :max-age None  ; A session cookie
+        :max-age cookie-max-age
         :path cookie-path
         :secure T
         :httponly T
