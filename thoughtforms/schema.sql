@@ -2,6 +2,7 @@ pragma journal_mode = wal;
 
 create table Subjects
    (subject                           integer primary key,
+    task_version        text          not null,
     cookie_hash         blob          not null unique,
     prolific_pid        blob          not null unique,
     prolific_study      blob          not null

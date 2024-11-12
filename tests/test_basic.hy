@@ -16,6 +16,7 @@
 (setv ex (dict
   :page-title "Example Task"
   :language "en-GB"
+  :task-version "1.0.3"
   :consent-elements (E.p "This is a consent form.")
   :favicon-png-url "http://example.com/favicon.ico"
   :consent-instructions #[[If you type "I consent" below, then you consent.]]
@@ -127,6 +128,7 @@
 
   ; Now the database has a subject row.
   (setv [subject-info] (.values (get (.read-db tasker) "subjects")))
+  (assert (= (:task-version subject-info) (:task-version ex)))
   (assert (= (.hex (:prolific-pid subject-info)) (:prolific-pid ex)))
   (assert (= (.hex (:prolific-study subject-info)) (:prolific-study ex)))
   (assert (= (:ip subject-info) (:user-ip-addr ex)))
@@ -205,6 +207,7 @@
         :type int)
       (.complete task))
     :cookie-path "/"
+    :task-version (:task-version ex)
     :page-title (:page-title ex)
     :language (:language ex)
     :db-path db-path

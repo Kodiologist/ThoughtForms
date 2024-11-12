@@ -38,6 +38,7 @@
   (meth __init__ [
       @page-title @language
       @db-path
+      @task-version
       @consent-elements
       [@favicon-png-url "data:image/png;base64,iVBORw0KGgo="]
         ; An empty PNG, to prevent requests to `favicon.ico`.
@@ -97,9 +98,10 @@
       (setv @set-cookie? True)
       (with-db (.execute db
         "insert into Subjects
-            (prolific_pid, prolific_study, cookie_hash, ip, user_agent, consented_time)
-            values (?, ?, ?, ?, ?, ?)"
+            (task_version, prolific_pid, prolific_study, cookie_hash, ip, user_agent, consented_time)
+            values (?, ?, ?, ?, ?, ?, ?)"
         [
+          @task-version
           (bytes.fromhex (get @post-params "prolific-pid"))
           (bytes.fromhex (get @post-params "prolific-study"))
           (.digest (sha256 @cookie-id))
