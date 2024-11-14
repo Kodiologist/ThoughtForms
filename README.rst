@@ -1,7 +1,7 @@
 ThoughtForms
 !!!!!!!!!!!!
 
-ThoughtForms is a low-dependency Python web framework for administering surveys and psychology experiments, particularly on `Prolific <https://prolific.com>`__. It produces simple form-based dynamic HTML without JavaScript, and it saves data with SQLite. An interface is provided for creating a WSGI application via `Werkzeug <https://werkzeug.palletsprojects.com>`__, but you can also call slightly lower-level functions to manually link up with a web server, so Werkzeug isn't a hard dependency.
+ThoughtForms is a low-dependency Python web framework for administering surveys and psychology experiments, particularly on `Prolific <https://prolific.com>`__. It produces simple form-based dynamic HTML without JavaScript, and it saves data with SQLite. An interface is provided for creating a WSGI application via `Werkzeug <https://werkzeug.palletsprojects.com>`__, but you can also call slightly lower-level functions to manually link up with a web server, so Werkzeug isn't a hard dependency. Another optional dependency is `Requests <https://requests.readthedocs.io>`__, for ``thoughtforms.prolific``.
 
 Currently, ThoughtForms is immature and mostly undocumented.
 
