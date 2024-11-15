@@ -23,7 +23,9 @@
   :completion-message "You did it! Wowie!"
   :user-ip-addr "123.123.123.123"
   :user-agent "BonziBUDDY 2024 (like Mozilla)"
-  :prolific-pid "cafebabe" :prolific-study "deadbeef"
+  :prolific-pid "cafebabe"
+  :prolific-session "123abc"
+  :prolific-study "deadbeef"
   :page-head (E.meta :name "ICBM" :content "please don't nuke me")))
 
 (defn one-element-xpath [document query]
@@ -130,6 +132,7 @@
   (setv [subject-info] (.values (get (.read-db tasker) "subjects")))
   (assert (= (:task-version subject-info) (:task-version ex)))
   (assert (= (.hex (:prolific-pid subject-info)) (:prolific-pid ex)))
+  (assert (= (.hex (:prolific-session subject-info)) (:prolific-session ex)))
   (assert (= (.hex (:prolific-study subject-info)) (:prolific-study ex)))
   (assert (= (:ip subject-info) (:user-ip-addr ex)))
   (assert (= (:user-agent subject-info) (:user-agent ex)))
@@ -182,6 +185,7 @@
   ; A different subject, however, should be able to see a new
   ; permutation.
   (setv (. tasker run-args ["prolific_pid"]) "cafed00d")
+  (setv (. tasker run-args ["prolific_session"]) "1337")
   (setv tasker.cookie-id None)
   (run-task)
   (assert (=
@@ -216,7 +220,7 @@
 
   ; Get the consent form.
   (setv r (.get client :environ-base eb
-    f"/?PROLIFIC_PID={(:prolific-pid ex)}&STUDY_ID={(:prolific-study ex)}"))
+    f"/?PROLIFIC_PID={(:prolific-pid ex)}&SESSION_ID={(:prolific-session ex)}&STUDY_ID={(:prolific-study ex)}"))
   (assert (= r.status-code 200))
   (assert (not-in "Set-Cookie" r.headers))
   (assert (in (render-elem (:consent-elements ex)) r.text))
@@ -226,6 +230,7 @@
   (setv r (.post client "/" :environ-base eb :data {
     "k" "CONSENT"
     "prolific-pid" (:prolific-pid ex)
+    "prolific-session" (:prolific-session ex)
     "prolific-study" (:prolific-study ex)
     "consent-statement" "i consent"}))
   (assert (= r.status-code 200))

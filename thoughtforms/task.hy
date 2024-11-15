@@ -46,7 +46,7 @@
       [@completion-message #[[Press the button to complete this session. Thank you.]]]
       [@cookie-id None]
       [@user-ip-addr None] [@user-agent ""]
-      [@prolific-pid None] [@prolific-study None]
+      [@prolific-pid None] [@prolific-session None] [@prolific-study None]
       [@post-params None]
       [@page-head #()]
       [@sqlite-timeout-seconds DEFAULT-SQLITE-TIMEOUT-SECONDS]]
@@ -87,6 +87,7 @@
         @post-params
         (= (.get @post-params "k") k)
         (in "prolific-pid" @post-params)
+        (in "prolific-session" @post-params)
         (in "prolific-study" @post-params)
         (re.match
           r"\s*i\s*consent\s*\Z"
@@ -98,11 +99,12 @@
       (setv @set-cookie? True)
       (with-db (.execute db
         "insert into Subjects
-            (task_version, prolific_pid, prolific_study, cookie_hash, ip, user_agent, consented_time)
-            values (?, ?, ?, ?, ?, ?, ?)"
+            (task_version, prolific_pid, prolific_session, prolific_study, cookie_hash, ip, user_agent, consented_time)
+            values (?, ?, ?, ?, ?, ?, ?, ?)"
         [
           @task-version
           (bytes.fromhex (get @post-params "prolific-pid"))
+          (bytes.fromhex (get @post-params "prolific-session"))
           (bytes.fromhex (get @post-params "prolific-study"))
           (.digest (sha256 @cookie-id))
           @user-ip-addr
@@ -118,6 +120,8 @@
         @consent-instructions)
       (E.input :type "hidden"
         :name "prolific-pid" :value @prolific-pid)
+      (E.input :type "hidden"
+        :name "prolific-session" :value @prolific-session)
       (E.input :type "hidden"
         :name "prolific-study" :value @prolific-study)
       (E.input :name "consent-statement")
@@ -397,6 +401,7 @@
     (setv [cookie-id output] (Task.run callback
       :post-params (when post? (dict req.form))
       :prolific-pid (.get req.args "PROLIFIC_PID")
+      :prolific-session (.get req.args "SESSION_ID")
       :prolific-study (.get req.args "STUDY_ID")
       :cookie-id (when (setx c (.get req.cookies COOKIE-NAME))
         (bytes.fromhex c))

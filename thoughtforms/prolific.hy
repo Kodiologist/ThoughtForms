@@ -60,7 +60,7 @@
     :completion-codes [{"code" code "code_type" "COMPLETED"}]
     :external-study-url (+
       task-url
-      "?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}")
+      "?PROLIFIC_PID={{%PROLIFIC_PID%}}&SESSION_ID={{%SESSION_ID%}}&STUDY_ID={{%STUDY_ID%}}")
     #** kwargs)))
 
   (hy.I.thoughtforms/db.call db-path (fn [db]
