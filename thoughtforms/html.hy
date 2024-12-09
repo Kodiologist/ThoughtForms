@@ -9,9 +9,9 @@ much more than we need."
 (setv  T True  F False)
 
 
-(setv RawHTML (namedtuple "RawHTML" ["string"]))
-
 (setv VOID-TAGS (tuple (.split "area base br col embed hr img input link meta source track wbr")))
+
+(setv RawHTML (namedtuple "RawHTML" ["string"]))
 
 (setv Element (namedtuple "Element" (map hy.mangle
   '[tag attrs kids])))
