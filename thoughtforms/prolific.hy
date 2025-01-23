@@ -11,7 +11,7 @@
 
 (defn api [verb endpoint #** json-kwargs]
   (setv r (hy.I.requests.request verb
-    (+ "https://api.prolific.co/api/v1/" endpoint)
+    (+ "https://api.prolific.com/api/v1/" endpoint)
     :headers (dict :Authorization (+
       "Token "
       (get os.environ "PROLIFIC_API_TOKEN")))
