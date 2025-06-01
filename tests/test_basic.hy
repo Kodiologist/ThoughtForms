@@ -9,7 +9,7 @@
   mechanicalsoup
   werkzeug
   thoughtforms
-  thoughtforms.html [E render-elem]
+  thoughtforms.html [E render-elem ecat]
   pytest)
 
 
@@ -17,7 +17,11 @@
   :page-title "Example Task"
   :language "en-GB"
   :task-version "1.0.3"
-  :consent-elements (E.p "This is a consent form.")
+  :consent-elements (list (ecat
+    ; Here we're testing `ecat`.
+    (E.p "Consent form paragraph #1.")
+    None
+    [(E.p "Consent form paragraph #2.")]))
   :favicon-png-url "http://example.com/favicon.ico"
   :consent-instructions #[[If you type "I consent" below, then you consent.]]
   :completion-message "You did it! Wowie!"

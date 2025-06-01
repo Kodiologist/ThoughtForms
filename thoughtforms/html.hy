@@ -27,8 +27,8 @@ much more than we need."
 
 (defn ecat [#* es]
   "Yield `str`s, `RawHTML`s, and `Element`s, descending into other
-  iterable objects."
-  (for [e es]
+  iterable objects, and skipping `None`s."
+  (for [e es  :if (is-not e None)]
     (if (isinstance e #(str RawHTML Element))
       (yield e)
       (yield :from (ecat #* e)))))

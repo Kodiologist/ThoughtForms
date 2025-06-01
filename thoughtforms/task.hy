@@ -346,7 +346,7 @@
 
 </form></body></html>\n")))
 
-  (meth generate-page [f-page k before #* args [after #()] #** kwargs]
+  (meth generate-page [f-page k before #* args [after None] #** kwargs]
 
     (setv k (hy.mangle k))
     (if (in k @data)
