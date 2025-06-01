@@ -244,7 +244,6 @@
     "integer" "-8"}))
   (assert (= r.status-code 200))
   (assert (in (:completion-message ex) r.text))
-  (print (thoughtforms.db.read db-path))
   (assert (= -8 (:v (get
     (thoughtforms.db.read db-path)
     "data"
