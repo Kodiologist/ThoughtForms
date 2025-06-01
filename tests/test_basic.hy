@@ -152,17 +152,25 @@
 
 
 (defn test-shuffle [tasker]
+  ; This also tests `dval`.
 
   (hy.I.random.seed "shuffle")
   (setv objs "abcdefg")
   (setv shuffled-to "cadfgbe")
   (setv shuffled-to-2 "gbedfca")
 
+  (setv dvals {})
+
   (setv tasker.callback (fn [task page]
     (.consent-form task)
+    (setv shuf (.shuffle task "the-perm" objs))
+    (setv (get dvals "perm") (.dval task "the-perm"))
+    (setv (get dvals "failed1") (.dval task "foobar" "default_value"))
+    (setv (get dvals "failed2") (try
+      (.dval task "foobar")
+      (except [KeyError] "KeyError")))
     (page 'continue "cpage"
-       (E.p (+ "Shuffled items: " (.join ""
-         (.shuffle task "the-perm" objs)))))
+       (E.p (+ "Shuffled items: " (.join "" shuf))))
     (.complete task)))
 
   ; The output to `shuffle` should be a premutation of the input.
@@ -174,9 +182,8 @@
       (.set form "consent-statement" "i consent")))
     shuffled-to))
   ; The stored premutation index `the_perm` should be an approriate integer.
-  (setv perm (get (.read-db tasker) "data" #(1 "the_perm") "v"))
-  (assert (is (type perm) int))
-  (assert (<= 0 perm (- (hy.I.math.factorial (len objs)) 1)))
+  (assert (is (type (:perm dvals)) int))
+  (assert (<= 0 (:perm dvals) (- (hy.I.math.factorial (len objs)) 1)))
   ; Getting the page again should yield the same permutation.
   (assert (=
     (get-shuf (run-task))
@@ -194,7 +201,11 @@
     shuffled-to-2))
   (assert (=
     (get-shuf (run-task))
-    shuffled-to-2)))
+    shuffled-to-2))
+
+  ; Check the other `dval` elements.
+  (assert (= (:failed1 dvals) "default_value"))
+  (assert (= (:failed2 dvals) "KeyError")))
 
 
 (defn test-wsgi-application [tmp-path]

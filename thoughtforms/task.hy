@@ -27,6 +27,8 @@
 (setv COOKIE-NAME "thoughtforms-cookie-id")
 (setv PROLIFIC-COMPLETION-URL "https://app.prolific.com/submissions/complete")
 
+(defclass Sentinel [])
+
 ;; * `Task`
 
 (defclass Task []
@@ -55,6 +57,14 @@
       @data {}
       @set-cookie? False)
     (@read-cookie))
+
+  (meth dval [k [default Sentinel]]
+    "Return the value for the requested data item. If `default` isn't provided,
+    `KeyError` is raised for a missing key."
+    (setv k (hy.mangle k))
+    (if (or (is default Sentinel) (in k @data))
+      (. @data [k] v)
+      default))
 
   (meth [classmethod] run [callback #* args #** kwargs]
     "Make a new task and run it with the given callback. Other
@@ -176,7 +186,7 @@
             (subject, k, v, first_sent_time, received_time)
             values (?, ?, jsonb(?), ?, ?)"
         [@subject k (json.dumps v :separators ",:") t t])))
-    (nth-permutation iterable (len iterable) (. @data [k] v)))
+    (nth-permutation iterable (len iterable) (@dval k)))
 
 ;; *** Page types
 
