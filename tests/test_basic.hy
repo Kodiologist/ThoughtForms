@@ -77,7 +77,7 @@
 
   (meth read-db []
     (thoughtforms.db.read @db-path)))
-    
+
 (defn [pytest.fixture] tasker [tmp-path]
   (TaskFixture tmp-path))
 
