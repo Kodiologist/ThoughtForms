@@ -90,6 +90,9 @@
 
   (setv tasker.callback (fn [task page]
     (.consent-form task)
+    (page 'enter-number "cool-number"
+      (E.p "enter a cool number")
+      :type int)
     (.complete task)))
 
   ; Get the first page of the task, which is the consent form.
@@ -142,10 +145,16 @@
   (assert (= (:user-agent subject-info) (:user-agent ex)))
   (assert (:consented-time subject-info))
 
-  ; And we're looking at the completion form.
+  ; And we're looking at the only question page, `cool-number`.
   (assert (!= output output-was))
   (assert tasker.cookie-id)
-  (assert (:completed-time subject-info))
+  (assert (in "enter a cool number" output))
+
+  ; Answer the question, taking us to the completion form.
+  (setv output (run-task
+    (.set form "integer" "5")))
+  (assert (:completed-time
+    (next (iter (.values (get (.read-db tasker) "subjects"))))))
   (setv doc (as-html output))
   (assert (=
     #x"p[@class = 'completion-message']/text()"
@@ -222,7 +231,7 @@
     (fn [task page]
       (.consent-form task)
       (page 'enter-number "cool-number"
-        (E.p "enter a number")
+        (E.p "enter a cool number")
         :type int)
       (.complete task))
     :cookie-path "/"
@@ -250,7 +259,7 @@
     "consent-statement" "i consent"}))
   (assert (= r.status-code 200))
   (assert (in "Set-Cookie" r.headers))
-  (assert (in "enter a number" r.text))
+  (assert (in "enter a cool number" r.text))
   (assert (:subjects (thoughtforms.db.read db-path)))
 
   ; Enter a number on the number-entry page.
