@@ -5,8 +5,12 @@
   hyrule [pun])
 (import
   os
+  time [time]
   string
-  random)
+  pathlib [Path]
+  random
+  json
+  csv)
 
 
 (defn api [verb endpoint #** json-kwargs]
@@ -17,9 +21,12 @@
       (get os.environ "PROLIFIC_API_TOKEN")))
     #** (if json-kwargs {"json" json-kwargs} {})))
   (when (>= r.status-code 400)
-    (print (.json r)))
+    (print r.text))
   (.raise-for-status r)
-  (.json r))
+  (if (.endswith endpoint "/export")
+    ; This one endpoint returns CSV, rather than JSON.
+    r.text
+    (.json r)))
 
 
 (defn first-lang-english []
@@ -70,3 +77,27 @@
         values (?, ?)"
       [(bytes.fromhex (:id study)) code])))
   (print "Created:" name))
+
+
+(defn update-demographics-file [study-id json-path]
+  "Update (or create) a JSON archive of Prolific demographics values
+  for the given study."
+
+  (setv json-path (Path json-path))
+  (setv demog (if (.exists json-path)
+    (json.loads (.read-text json-path))
+    {}))
+  (setv seen (sfor  d demog  (get d "Submission id")))
+  (setv downloaded-time (int (time)))
+  (.write-text json-path (json.dumps (+
+    demog
+    (lfor
+      row (csv.DictReader (.split :sep "\n"
+        (api "GET" f"studies/{(.hex study-id)}/export")))
+      :if (not-in (get row "Submission id") seen)
+      :do (.add seen (get row "Submission id"))
+      (pun (dict :!downloaded-time #** (dfor
+        [k v] (.items row)
+        k (if (and (in k ["Age" "Total approvals"]) (.isdigit v))
+          (int v)
+          v)))))))))
