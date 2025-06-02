@@ -1,0 +1,25 @@
+[
+  {
+    "downloaded_time": 1748877413,
+    "Submission id": "123abc",
+    "Participant id": "cafebabe",
+    "Status": "AWAITING REVIEW",
+    "Custom study tncs accepted at": "Not Applicable",
+    "Started at": "2025-01-01T12:50:00.123000Z",
+    "Completed at": "2025-01-01T12:55:00.456000Z",
+    "Reviewed at": "",
+    "Archived at": "2025-01-01T12:56:00.024186Z",
+    "Time taken": "135.0",
+    "Completion code": "arThrOPods",
+    "Total approvals": 797979,
+    "Age": 42,
+    "Sex": "Male",
+    "Ethnicity simplified": "Asian",
+    "Country of birth": "China",
+    "Country of residence": "United States",
+    "Nationality": "China",
+    "Language": "English",
+    "Student status": "No",
+    "Employment status": "Full-Time"
+  }
+]

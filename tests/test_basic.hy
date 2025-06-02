@@ -5,6 +5,7 @@
   hyrule [meth])
 (import
   re
+  json
   lxml.html [document-fromstring :as as-html]
   mechanicalsoup
   werkzeug
@@ -32,6 +33,24 @@
   :prolific-study "deadbeef"
   :page-head (E.meta :name "ICBM" :content "please don't nuke me")
   :mock-time 11211))
+
+(setv the-subject (dict
+  :task-version (:task-version ex)
+  :prolific-study (:prolific-study ex)
+  :user-agent (:user-agent ex)
+  :consented-time (:mock-time ex)
+  :completed-time (:mock-time ex)
+  :pd-downloaded-time 1748877413
+  :pd-total-approvals 797979
+  :pd-age 42
+  :pd-sex "Male"
+  :pd-ethnicity-simplified "Asian"
+  :pd-country-of-birth "China"
+  :pd-country-of-residence "United States"
+  :pd-nationality "China"
+  :pd-language "English"
+  :pd-student-status "No"
+  :pd-employment-status "Full-Time"))
 
 (defn one-element-xpath [document query]
   (setv [x] (.xpath document query))
@@ -87,7 +106,12 @@
     `(fn [form] ~@form-actions-body))))
 
 
-(defn test-minimal-task [tasker]
+(defn test-minimal-task [tasker tmp-path]
+  (subtest-run-task tasker)
+  (subtest-deidentified-json tasker.db-path tmp-path)
+  (subtest-json-to-pandas tmp-path))
+
+(defn subtest-run-task [tasker]
 
   (setv tasker.callback (fn [task page]
     (.consent-form task)
@@ -165,6 +189,36 @@
   (assert (= #x"input[@name = 'cc']/@value" "test study")))
     ; This is the completion code, which is needed for submission to
     ; Prolific.
+
+(defn subtest-deidentified-json [db-path tmp-path]
+  (thoughtforms.db.deidentified-json
+    :db-in-path db-path
+    :demog-in-path "tests/fake_prolific_demographics.json"
+    :out-path (/ tmp-path "deidentified.json"))
+  (setv dj (json.loads (.read-text (/ tmp-path "deidentified.json"))))
+  (assert (= dj (dict
+    :subjects [(dict :subject 1 #** the-subject)]
+    :task-columns ["subject" "k" "v" "time1" "time2"]
+    :task [
+      [1 "cool_number" 5 (:mock-time ex) (:mock-time ex)]])))
+  (/ tmp-path "deidentified.json"))
+
+(defn subtest-json-to-pandas [tmp-path]
+  (setv [subjects task-data] (thoughtforms.db.json-to-pandas
+    (/ tmp-path "deidentified.json")))
+  (assert (=
+    ; Compare `subjects` after converting pandas timestamp objects to
+    ; integers.
+    (dfor
+      [k v] (.items (.to-dict (get subjects.iloc 0)))
+      k (if (isinstance v hy.I.pandas.Timestamp) (int (.timestamp v)) v))
+    (dict
+      #** the-subject
+      :tv 1
+      :total-mins 0.)))
+  (assert (=
+    (get (.to-dict task-data "index") #(1 "cool_number"))
+    {"v" 5  "time1" (:mock-time ex)  "time2" (:mock-time ex)})))
 
 
 (defn test-shuffle [tasker]
