@@ -4,7 +4,6 @@
   hyrule [unless ecase meth])
 (import
   builtins
-  time [time]
   collections [namedtuple]
   pathlib [Path]
   re
@@ -51,7 +50,8 @@
       [@prolific-pid None] [@prolific-session None] [@prolific-study None]
       [@post-params None]
       [@page-head #()]
-      [@sqlite-timeout-seconds DEFAULT-SQLITE-TIMEOUT-SECONDS]]
+      [@sqlite-timeout-seconds DEFAULT-SQLITE-TIMEOUT-SECONDS]
+      [@mock-time None]]
     (setv
       @subject None
       @data {}
@@ -77,6 +77,11 @@
         #((when task.set-cookie? task.cookie-id) output))
       (else
         (raise (ValueError "The task callback exited with no output")))))
+
+  (meth time []
+    (or
+      @mock-time
+      (int (hy.I.time.time))))
 
   (defmacro with-db [#* body]
     `(hy.I.thoughtforms/db.call
@@ -119,7 +124,7 @@
           (.digest (sha256 @cookie-id))
           @user-ip-addr
           @user-agent
-          (int (time))]))
+          (@time)]))
       (@read-cookie)
       (return))
 
@@ -145,7 +150,7 @@
         "update Subjects
             set completed_time = ?
             where subject = ? and completed_time isnull"
-        [(int (time)) @subject])
+        [(@time) @subject])
       (list (.execute db
         "select completion_code
             from ProlificStudies
@@ -177,7 +182,7 @@
     (setv k (hy.mangle k))
     (setv iterable (tuple iterable))
     (unless (in k @data)
-      (setv t (int (time)))
+      (setv t (@time))
       (setv v (hy.I.random.randrange
         (hy.I.math.factorial (len iterable))))
       (setv (get @data k) (TaskDataRecord v t t))
@@ -356,7 +361,7 @@
       (do
         ; The subject is getting this page for the first time. Save
         ; the time.
-        (setv t (int (time)))
+        (setv t (@time))
         (setv (get @data k) (TaskDataRecord None t None))
         (with-db (.execute db
           "insert or ignore into TaskData
@@ -376,7 +381,7 @@
         (except [InvalidInputError])
         (else
           ; We have a valid `v`.
-          (setv t (int (time)))
+          (setv t (@time))
           (setv (get @data k)
             (TaskDataRecord v (. @data [k] first-sent-time) t))
           (setv output

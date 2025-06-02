@@ -30,7 +30,8 @@
   :prolific-pid "cafebabe"
   :prolific-session "123abc"
   :prolific-study "deadbeef"
-  :page-head (E.meta :name "ICBM" :content "please don't nuke me")))
+  :page-head (E.meta :name "ICBM" :content "please don't nuke me")
+  :mock-time 11211))
 
 (defn one-element-xpath [document query]
   (setv [x] (.xpath document query))
@@ -143,7 +144,7 @@
   (assert (= (.hex (:prolific-study subject-info)) (:prolific-study ex)))
   (assert (= (:ip subject-info) (:user-ip-addr ex)))
   (assert (= (:user-agent subject-info) (:user-agent ex)))
-  (assert (:consented-time subject-info))
+  (assert (= (:consented-time subject-info) (:mock-time ex)))
 
   ; And we're looking at the only question page, `cool-number`.
   (assert (!= output output-was))
@@ -153,8 +154,10 @@
   ; Answer the question, taking us to the completion form.
   (setv output (run-task
     (.set form "integer" "5")))
-  (assert (:completed-time
-    (next (iter (.values (get (.read-db tasker) "subjects"))))))
+  (assert (=
+    (:completed-time
+      (next (iter (.values (get (.read-db tasker) "subjects")))))
+    (:mock-time ex)))
   (setv doc (as-html output))
   (assert (=
     #x"p[@class = 'completion-message']/text()"
