@@ -3,9 +3,12 @@ ThoughtForms
 
 ThoughtForms is a low-dependency Python web framework for administering surveys and psychology experiments, particularly on `Prolific <https://prolific.com>`__. It produces simple form-based dynamic HTML without JavaScript, and it saves data with SQLite. An interface is provided for creating a WSGI application via `Werkzeug <https://werkzeug.palletsprojects.com>`__, but you can also call slightly lower-level functions to manually link up with a web server, so Werkzeug isn't a hard dependency. Another optional dependency is `Requests <https://requests.readthedocs.io>`__, for ``thoughtforms.prolific``.
 
-Currently, ThoughtForms is immature and mostly undocumented.
+The library is similar to and uses ideas from my earlier libraries `Tversky <https://github.com/Kodiologist/Tversky>`__ (for Perl CGI programs) and `SchizoidPy <https://github.com/Kodiologist/SchizoidPy>`__ (for Python native applications via PsychoPy).
 
-This library is similar to and uses ideas from my earlier libraries `Tversky <https://github.com/Kodiologist/Tversky>`__ (for Perl CGI programs) and `SchizoidPy <https://github.com/Kodiologist/SchizoidPy>`__ (for Python native applications via PsychoPy).
+Usage
+============================================================
+
+ThoughtForms isn't on PyPI and is largely undocumented, on the philosophy that nobody other than me is likely to use it. But see ``examples/example_task.py`` for a small, self-contained task program.
 
 Licenses
 ============================================================
