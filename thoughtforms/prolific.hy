@@ -64,7 +64,10 @@
     :estimated-completion-time estimated-completion-minutes
     :reward reward-cents
     :prolific-id-option "url_parameters"
-    :completion-codes [{"code" code "code_type" "COMPLETED"}]
+    :completion-codes [(dict
+      :code code
+      :code-type "COMPLETED"
+      :actions [{"action" "MANUALLY_REVIEW"}])]
     :external-study-url (+
       task-url
       "?PROLIFIC_PID={{%PROLIFIC_PID%}}&SESSION_ID={{%SESSION_ID%}}&STUDY_ID={{%STUDY_ID%}}")
