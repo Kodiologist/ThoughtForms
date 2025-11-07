@@ -22,4 +22,3 @@ setuptools.setup(
         'Operating System :: OS Independent',
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Internet :: WWW/HTTP :: WSGI :: Application'])
-
