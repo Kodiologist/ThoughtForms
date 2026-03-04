@@ -89,7 +89,7 @@
   (setv json-path (Path json-path))
   (setv demog (if (.exists json-path)
     (json.loads (.read-text json-path))
-    {}))
+    []))
   (setv seen (sfor  d demog  (get d "Submission id")))
   (setv downloaded-time (int (time)))
   (.write-text json-path (json.dumps (+
