@@ -245,7 +245,7 @@
           [i [value text-beside]] (enumerate options)
           (if (is text-beside FREE-RESPONSE)
             (E.label
-              ; In the free-resposne case, provide a text input
+              ; In the free-response case, provide a text input
               ; instead of an actual checkbox.
               (str value)
               " "
