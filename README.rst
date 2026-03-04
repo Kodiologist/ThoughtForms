@@ -18,7 +18,7 @@ ThoughtForms as a whole is licensed under the GPL ≥3. It contains portions of 
 License for ThoughtForms
 ------------------------------------------------------------
 
-This program is copyright 2025 Kodi B. Arfer.
+This program is copyright 2026 Kodi B. Arfer.
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
