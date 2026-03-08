@@ -7,7 +7,7 @@
   lxml.html [document-fromstring :as as-html]
   thoughtforms
   thoughtforms.task [FREE-RESPONSE InvalidInputError]
-  thoughtforms.html [render-elem]
+  thoughtforms.html [E render-elem]
   pytest)
 (setv  T True  F False)
 
@@ -143,3 +143,33 @@
     ; A web browser will send the empty string for the text box even
     ; if the user doesn't touch it. So even for this optional item, if
     ; no `text` form element is received, something is wrong.
+
+
+(defn test-custom [P]
+  "Make a page with two small text boxes and a button. Both boxes must
+  be nonempty (after stripping whitespace). The button isn't checked."
+
+  (P.define 'custom
+    [
+      (E.ul
+        (E.li (E.input :name "inp1"))
+        (E.li (E.input :name "inp2")))
+      (E.p (E.button "OK" :type "submit"))]
+    :f (fn [ps]
+      (setv v1 (.strip (.get ps "inp1" "")))
+      (setv v2 (.strip (.get ps "inp2" "")))
+      (when (not (and v1 v2))
+        (raise InvalidInputError))
+      [v1 v2]))
+
+  (assert (=
+    (P.good :inp1 "a" :inp2 "b")
+    ["a" "b"]))
+  (assert (=
+    (P.good :inp1 "\n  tacos\n\n" :inp2 " bell fry   ")
+    ["tacos" "bell fry"]))
+
+  (P.bad :inp1 "a")
+  (P.bad :inp1 "a" :inp2 "")
+  (P.bad :inp1 "   " :inp2 "\n \n ")
+  (P.bad))

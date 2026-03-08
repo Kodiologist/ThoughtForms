@@ -302,6 +302,14 @@
           (raise InvalidInputError))
         text)))
 
+  (meth page--custom [#* elements f]
+    "Write your own form elements and processing function. The
+    function takes the submitted parameters `ps` and should return a
+    JSON-serializable object, or raise `InvalidInputError` if the
+    subject didn't complete the page correctly."
+
+    (dict :elements elements :f f))
+
 ;; ** Internals
 
   (meth read-cookie []
