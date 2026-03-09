@@ -4,9 +4,9 @@ create table Subjects
    (subject                           integer primary key,
     task_version        text          not null,
     cookie_hash         blob          not null unique,
-    prolific_pid        blob          not null,
-    prolific_session    blob          not null,
-    prolific_study      blob          not null
+    prolific_pid        blob,
+    prolific_session    blob,
+    prolific_study      blob
       references ProlificStudies(prolific_study),
     ip                  text          not null,
     user_agent          text          not null,

@@ -47,6 +47,7 @@
       [@completion-message #[[Press the button to complete this session. Thank you.]]]
       [@cookie-id None]
       [@user-ip-addr None] [@user-agent ""]
+      [@require-prolific T]
       [@prolific-pid None] [@prolific-session None] [@prolific-study None]
       [@post-params None]
       [@page-head #()]
@@ -101,9 +102,12 @@
     (when (and
         @post-params
         (= (.get @post-params "k") k)
-        (in "prolific-pid" @post-params)
-        (in "prolific-session" @post-params)
-        (in "prolific-study" @post-params)
+        (or
+          (not @require-prolific)
+          (and
+            (in "prolific-pid" @post-params)
+            (in "prolific-session" @post-params)
+            (in "prolific-study" @post-params)))
         (re.match
           r"\s*i\s*consent\s*\Z"
           (.get @post-params "consent-statement" "")
@@ -112,12 +116,15 @@
       ; for them and set a cookie.
       (setv @cookie-id (hy.I.secrets.token-bytes N-COOKIE-BYTES))
       (setv @set-cookie? True)
+      (defn prolific-thing [x]
+        (when (or @require-prolific (in f"prolific-{x}" @post-params))
+          (bytes.fromhex (get @post-params f"prolific-{x}"))))
       (with-db (sqlexec db
         f"insert into Subjects {... :values}"
         :task_version @task-version
-        :prolific_pid (bytes.fromhex (get @post-params "prolific-pid"))
-        :prolific_session (bytes.fromhex (get @post-params "prolific-session"))
-        :prolific_study (bytes.fromhex (get @post-params "prolific-study"))
+        :prolific_pid (prolific-thing "pid")
+        :prolific_session (prolific-thing "session")
+        :prolific_study (prolific-thing "study")
         :cookie_hash (.digest (sha256 @cookie-id))
         :ip @user-ip-addr
         :user_agent @user-agent
@@ -126,41 +133,44 @@
       (return))
 
     ; The subject hasn't consented, so display the consent page.
+    (defn prolific-thing [x]
+      (when (getattr self f"prolific_{x}")
+        (E.input :type "hidden"
+          :name f"prolific-{x}" :value (getattr self f"prolific_{x}"))))
     (@make-output k (ecat
       @consent-elements
       (E.p :class "consent-instructions"
         @consent-instructions)
-      (E.input :type "hidden"
-        :name "prolific-pid" :value @prolific-pid)
-      (E.input :type "hidden"
-        :name "prolific-session" :value @prolific-session)
-      (E.input :type "hidden"
-        :name "prolific-study" :value @prolific-study)
+      (prolific-thing "pid")
+      (prolific-thing "session")
+      (prolific-thing "study")
       (E.input :name "consent-statement")
       (E.button :type "submit" "OK"))))
 
   (meth complete []
     "Show the completion page. This should be called after all other page methods."
 
-    (setv [[completion-code]] (with-db
+    (with-db
       (sqlexec db
         f"update Subjects
             set completed_time = {(@time)}
             where subject = {@subject} and completed_time isnull")
-      (list (sqlexec db
-        f"select completion_code
-            from ProlificStudies
-            where prolific_study =
-              (select prolific_study from Subjects where subject = {@subject})"))))
-    (@make-output "completion" [
+      (when @prolific-study
+        (setv [[completion-code]] (sqlexec db
+          f"select completion_code
+              from ProlificStudies
+              where prolific_study =
+                (select prolific_study from Subjects where subject = {@subject})"))))
+    (@make-output "completion" (ecat
       (E.p :class "completion-message"
         @completion-message)
-      (E.input :type "hidden" :name "cc"
-        :value completion-code)
-      (E.button :type "submit"
-        :formmethod "GET" :formaction PROLIFIC-COMPLETION-URL
-          ; Prolific doesn't allow POST for this, nonsensically.
-        "Submit")]))
+      (when @prolific-study [
+        (E.input :type "hidden" :name "cc"
+          :value completion-code)
+        (E.button :type "submit"
+          :formmethod "GET" :formaction PROLIFIC-COMPLETION-URL
+            ; Prolific doesn't allow POST for this, nonsensically.
+          "Submit")]))))
 
   (meth generate-page-by-name [ptype #* args #** kwargs]
     "Show a page; or if the input data has been submitted for it,
