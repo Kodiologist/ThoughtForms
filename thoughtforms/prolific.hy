@@ -73,12 +73,12 @@
       "?PROLIFIC_PID={{%PROLIFIC_PID%}}&SESSION_ID={{%SESSION_ID%}}&STUDY_ID={{%STUDY_ID%}}")
     #** kwargs)))
 
-  (hy.I.thoughtforms/db.call db-path (fn [db]
+  (with [db (hy.I.thoughtforms/db.connect)]
     (.execute db
       "insert into ProlificStudies
         (prolific_study, completion_code)
         values (?, ?)"
-      [(bytes.fromhex (:id study)) code])))
+      [(bytes.fromhex (:id study)) code]))
   (print "Created:" name))
 
 

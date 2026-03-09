@@ -12,7 +12,7 @@ setuptools.setup(
         'Source Code': 'https://github.com/Kodiologist/thoughtforms'},
     install_requires = [
         'hy >= 1',
-        'hyrule >= 1'],
+        'hyrule @ git+https://github.com/hylang/hyrule#b74b2eff5534e91fee326dd68242f6c2e1f7927c'],
     packages = setuptools.find_packages(),
     package_data = dict(thoughtforms = ['schema.sql'] + [
         str(p.relative_to('thoughtforms'))

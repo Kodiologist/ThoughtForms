@@ -4,7 +4,7 @@
 (import
   pathlib [Path]
   json
-  sqlite3)
+  hyrule [sqlite-db])
 (setv  T True  F False)
 
 
@@ -12,28 +12,19 @@
 (setv SCHEMA (.read-text (/ (. (Path __file__) parent) "schema.sql")))
 
 
-(defn call [path f [timeout DEFAULT-SQLITE-TIMEOUT-SECONDS]]
-  "Open the database, call `f` on it, and close it."
-  (setv db (sqlite3.connect
-    :isolation-level None
-    :timeout timeout
-    path))
-  (try
-    (.execute db "pragma foreign_keys = true")
-    (setv db.row-factory sqlite3.Row)
-    (f db)
-    (finally
-      (.close db))))
+(defn connect [path [timeout DEFAULT-SQLITE-TIMEOUT-SECONDS]]
+  "As `hyrule.sqlite-db`, with a default timeout."
+  (sqlite-db path :timeout timeout))
 
 (defn initialize [path]
   "Erase any existing database at `path` and create a new one."
   (.unlink (Path path) :missing-ok T)
-  (call path (fn [db]
-    (.executescript db SCHEMA))))
+  (with [db (connect path)]
+    (.executescript db SCHEMA)))
 
 (defn read [path]
   "Read in all the database contents as dictionaries."
-  (call path (fn [db] (dict
+  (with [db (connect path)] (dict
     :subjects (dfor
       row (.execute db "select * from Subjects order by subject")
       (:subject row) (dfor
@@ -48,7 +39,7 @@
       #((:subject row) (:k row)) (dict
         :v (when (:v row) (json.loads (:v row)))
         :time1 (:time1 row)
-        :time2 (:time2 row)))))))
+        :time2 (:time2 row))))))
 
 
 (defn deidentified-json [db-in-path demog-in-path out-path]

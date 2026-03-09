@@ -1,7 +1,7 @@
 ;; * Imports
 
 (require
-  hyrule [unless ecase meth])
+  hyrule [unless ecase meth sqlexec])
 (import
   builtins
   collections [namedtuple]
@@ -84,10 +84,10 @@
       (int (hy.I.time.time))))
 
   (defmacro with-db [#* body]
-    `(hy.I.thoughtforms/db.call
-      self.db-path
-      (fn [db] ~@body)
-      self.sqlite-timeout-seconds))
+    `(with [db (hy.I.thoughtforms/db.connect
+        self.db-path
+        self.sqlite-timeout-seconds)]
+      ~@body))
 
   (meth consent-form []
     "Show the consent form. This should be called before any other
@@ -112,19 +112,16 @@
       ; for them and set a cookie.
       (setv @cookie-id (hy.I.secrets.token-bytes N-COOKIE-BYTES))
       (setv @set-cookie? True)
-      (with-db (.execute db
-        "insert into Subjects
-            (task_version, prolific_pid, prolific_session, prolific_study, cookie_hash, ip, user_agent, consented_time)
-            values (?, ?, ?, ?, ?, ?, ?, ?)"
-        [
-          @task-version
-          (bytes.fromhex (get @post-params "prolific-pid"))
-          (bytes.fromhex (get @post-params "prolific-session"))
-          (bytes.fromhex (get @post-params "prolific-study"))
-          (.digest (sha256 @cookie-id))
-          @user-ip-addr
-          @user-agent
-          (@time)]))
+      (with-db (sqlexec db
+        f"insert into Subjects {... :values}"
+        :task_version @task-version
+        :prolific_pid (bytes.fromhex (get @post-params "prolific-pid"))
+        :prolific_session (bytes.fromhex (get @post-params "prolific-session"))
+        :prolific_study (bytes.fromhex (get @post-params "prolific-study"))
+        :cookie_hash (.digest (sha256 @cookie-id))
+        :ip @user-ip-addr
+        :user_agent @user-agent
+        :consented_time (@time)))
       (@read-cookie)
       (return))
 
@@ -146,17 +143,15 @@
     "Show the completion page. This should be called after all other page methods."
 
     (setv [[completion-code]] (with-db
-      (.execute db
-        "update Subjects
-            set completed_time = ?
-            where subject = ? and completed_time isnull"
-        [(@time) @subject])
-      (list (.execute db
-        "select completion_code
+      (sqlexec db
+        f"update Subjects
+            set completed_time = {(@time)}
+            where subject = {@subject} and completed_time isnull")
+      (list (sqlexec db
+        f"select completion_code
             from ProlificStudies
             where prolific_study =
-              (select prolific_study from Subjects where subject = ?)"
-        [@subject]))))
+              (select prolific_study from Subjects where subject = {@subject})"))))
     (@make-output "completion" [
       (E.p :class "completion-message"
         @completion-message)
@@ -317,20 +312,19 @@
 
     (when @cookie-id
       (with-db
-        (setv [[@subject]] (.execute db
-          "select subject from Subjects where cookie_hash = ?"
-          [(.digest (sha256 @cookie-id))]))
-        (setv @data (list (.execute db
-          "select k, json(v) as v, first_sent_time, received_time
-              from TaskData
-              where subject = ?"
-          [@subject]))))
-      (setv @data (dfor
-        [k v first-sent-time received-time] @data
-        k (TaskDataRecord
-          (if (is v None) None (json.loads v))
-          first-sent-time
-          received-time)))))
+        (setv [[@subject]] (sqlexec db
+          f"select subject
+              from Subjects
+              where cookie_hash = {(.digest (sha256 @cookie-id))}"))
+        (setv @data (dfor
+          row (sqlexec db
+            f"select k, json(v) as v, first_sent_time, received_time
+                from TaskData
+                where subject = {@subject}")
+          row.k (TaskDataRecord
+            (if (is row.v None) None (json.loads row.v))
+            row.first-sent-time
+            row.received-time))))))
 
   (meth make-output [k elements]
     (raise (OutputReady f"<!DOCTYPE html>
@@ -371,11 +365,11 @@
         ; the time.
         (setv t (@time))
         (setv (get @data k) (TaskDataRecord None t None))
-        (with-db (.execute db
-          "insert or ignore into TaskData
-              (subject, k, first_sent_time)
-              values (?, ?, ?)"
-          [@subject k t]))))
+        (with-db (sqlexec db
+          f"insert or ignore into TaskData {... :values}"
+          :subject @subject
+          :k k
+          :first_sent_time t))))
 
     (setv d (f-page #* args #** kwargs))
     (setv middle-elements (get d "elements"))
@@ -392,13 +386,15 @@
           (setv t (@time))
           (setv (get @data k)
             (TaskDataRecord v (. @data [k] first-sent-time) t))
-          (setv output
-            #((json.dumps v :separators ",:") t @subject k))
-          (with-db (.execute db
-            "update TaskData
-                set v = jsonb(?), received_time = ?
-                where subject = ? and k = ? and received_time isnull"
-            output))
+          (with-db (sqlexec db
+            f"update TaskData
+                set
+                    v = jsonb({(json.dumps v :separators ",:")}),
+                    received_time = {t}
+                where
+                    subject = {@subject} and
+                    {k :=} and
+                    received_time isnull"))
           (return))))
 
     ; The subject hasn't completed this page, so display it.
