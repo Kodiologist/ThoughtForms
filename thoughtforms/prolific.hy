@@ -73,7 +73,7 @@
       "?PROLIFIC_PID={{%PROLIFIC_PID%}}&SESSION_ID={{%SESSION_ID%}}&STUDY_ID={{%STUDY_ID%}}")
     #** kwargs)))
 
-  (with [db (hy.I.thoughtforms/db.connect)]
+  (with [db (hy.I.thoughtforms/db.connect db-path)]
     (.execute db
       "insert into ProlificStudies
         (prolific_study, completion_code)
