@@ -57,18 +57,19 @@
   (for [[subject d] (.items (:subjects main))]
     ; Add the Prolific demographic data ("pd") to each subject
     ; dictionary.
-    (setv this-demog (get demog (:prolific-pid d)))
-    (for [k (map hy.mangle '[
-        downloaded-time total-approvals age sex
-        ethnicity-simplified
-        country-of-birth country-of-residence
-        nationality language
-        student-status employment-status])]
-      (setv v (get this-demog k))
-      (setv (get d (+ "pd_" k))
-        (if (in v ["CONSENT_REVOKED" "DATA_EXPIRED"]) None v)))
-    ; Convert `prolific_study` to a string.
-    (setv (get d "prolific_study") (.hex (get d "prolific_study")))
+    (when (:prolific-pid d)
+      (setv this-demog (get demog (:prolific-pid d)))
+      (for [k (map hy.mangle '[
+          downloaded-time total-approvals age sex
+          ethnicity-simplified
+          country-of-birth country-of-residence
+          nationality language
+          student-status employment-status])]
+        (setv v (get this-demog k))
+        (setv (get d (+ "pd_" k))
+          (if (in v ["CONSENT_REVOKED" "DATA_EXPIRED"]) None v)))
+      ; Convert `prolific_study` to a string.
+      (setv (get d "prolific_study") (.hex (get d "prolific_study"))))
     ; Delete personally identifying columns.
     (for [k ["cookie_hash" "ip" "prolific_pid" "prolific_session"]]
       (del (get d k))))
