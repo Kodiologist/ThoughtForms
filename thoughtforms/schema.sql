@@ -8,8 +8,8 @@ create table Subjects
     prolific_session    blob,
     prolific_study      blob
       references ProlificStudies(prolific_study),
-    ip                  text          not null,
-    user_agent          text          not null,
+    ip                  text,
+    user_agent          text,
     consented_time      integer       not null,
     completed_time      integer) strict;
 

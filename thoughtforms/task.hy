@@ -415,6 +415,7 @@
 (defn wsgi-application [callback *
     [cookie-path "/"]
     [cookie-max-age (* 24 60 60)]
+    [sensitive F]
     #** kwargs]
 
   "Create a WSGI application callback via Werkzeug. `kwargs` are
@@ -434,8 +435,8 @@
       :prolific-study (.get req.args "STUDY_ID")
       :cookie-id (when (setx c (.get req.cookies COOKIE-NAME))
         (bytes.fromhex c))
-      :user-ip-addr req.remote-addr
-      :user-agent (.headers.get req "User-Agent" "")
+      :user-ip-addr (when (not sensitive) req.remote-addr)
+      :user-agent (when (not sensitive) (.headers.get req "User-Agent" ""))
       #** kwargs))
 
     (setv resp (werkzeug.wrappers.Response

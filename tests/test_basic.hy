@@ -2,7 +2,7 @@
 
 
 (require
-  hyrule [meth])
+  hyrule [meth unless])
 (import
   re
   json
@@ -278,11 +278,15 @@
   (assert (= (:failed2 dvals) "KeyError")))
 
 
-(defn test-wsgi-application [tmp-path]
+(defn
+[(pytest.mark.parametrize "sensitive" [True False])]
+test-wsgi-application [tmp-path sensitive]
 
   (setv db-path (/ tmp-path "example.sqlite"))
   (thoughtforms.db.initialize db-path)
-  (setv eb {"REMOTE_ADDR" "100.100.100.100"})
+  (setv eb (dict
+    :REMOTE_ADDR "100.100.100.100"
+    :HTTP_USER_AGENT "kewlbot"))
 
   (setv client (werkzeug.test.Client (thoughtforms.wsgi-application
     (fn [task page]
@@ -291,6 +295,7 @@
         (E.p "enter a cool number")
         :type int)
       (.complete task))
+    :sensitive sensitive
     :cookie-path "/"
     :task-version (:task-version ex)
     :page-title (:page-title ex)
@@ -317,7 +322,14 @@
   (assert (= r.status-code 200))
   (assert (in "Set-Cookie" r.headers))
   (assert (in "enter a cool number" r.text))
-  (assert (:subjects (thoughtforms.db.read db-path)))
+  (setv [subject-info] (.values (:subjects (thoughtforms.db.read db-path))))
+  (assert subject-info)
+  (assert (=
+    (:ip subject-info)
+    (unless sensitive (:REMOTE_ADDR eb))))
+  (assert (=
+    (:user-agent subject-info)
+    (unless sensitive (:HTTP_USER_AGENT eb))))
 
   ; Enter a number on the number-entry page.
   (setv r (.post client "/" :environ-base eb :data {
