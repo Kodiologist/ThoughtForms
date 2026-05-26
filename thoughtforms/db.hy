@@ -45,31 +45,37 @@
 (defn deidentified-json [db-in-path demog-in-path out-path]
   "Combine the data from a SQLite database and a demographic JSON file
   (produced by `thoughtforms.prolific.update-demographics-file`),
-  deidentify it, and write out to a single JSON file."
+  deidentify it, and write out to a single JSON file. `demog-in-path`
+  may be None if no Prolific demographics are available."
 
   (setv main (read db-in-path))
-  (setv demog (dfor
+  (setv demog (when demog-in-path (dfor
     d (json.loads (.read-text (Path demog-in-path)))
     (bytes.fromhex (get d "Participant id")) (dfor
       [k v] (.items d)
-      (.replace (.lower k) " " "_") v)))
+      (.replace (.lower k) " " "_") v))))
 
   (for [[subject d] (.items (:subjects main))]
-    ; Add the Prolific demographic data ("pd") to each subject
-    ; dictionary.
     (when (:prolific-pid d)
-      (setv this-demog (get demog (:prolific-pid d)))
-      (for [k (map hy.mangle '[
-          downloaded-time total-approvals age sex
-          ethnicity-simplified
-          country-of-birth country-of-residence
-          nationality language
-          student-status employment-status])]
-        (setv v (get this-demog k))
-        (setv (get d (+ "pd_" k))
-          (if (in v ["CONSENT_REVOKED" "DATA_EXPIRED"]) None v)))
-      ; Convert `prolific_study` to a string.
-      (setv (get d "prolific_study") (.hex (get d "prolific_study"))))
+      ; Add the Prolific demographic data ("pd") to each subject
+      ; dictionary.
+      (if demog
+        (do
+          (setv this-demog (get demog (:prolific-pid d)))
+          (for [k (map hy.mangle '[
+              downloaded-time total-approvals age sex
+              ethnicity-simplified
+              country-of-birth country-of-residence
+              nationality language
+              student-status employment-status])]
+            (setv v (get this-demog k))
+            (setv (get d (+ "pd_" k))
+              (if (in v ["CONSENT_REVOKED" "DATA_EXPIRED"]) None v)))
+           ; Convert `prolific_study` to a string.
+           (setv (get d "prolific_study") (.hex (get d "prolific_study"))))
+        ; When demographics aren't available, assume the study is
+        ; sensitive, so remove `prolific_study`.
+        (del (get d "prolific_study"))))
     ; Delete personally identifying columns.
     (for [k ["cookie_hash" "ip" "prolific_pid" "prolific_session"]]
       (del (get d k))))
@@ -123,7 +129,9 @@
   (setv (get subjects "total_mins") (/
     (- (get subjects "completed_time") (get subjects "consented_time"))
     60))
-  (for [k ["consented_time" "completed_time" "pd_downloaded_time"]]
+  (for [
+      k ["consented_time" "completed_time" "pd_downloaded_time"]
+      :if (in k subjects)]
     (setv (get subjects k) (pd.to-datetime (get subjects k) :unit "s")))
 
   (setv task-data (get task-data (.isin
