@@ -59,6 +59,12 @@
       @set-cookie? False)
     (@read-cookie))
 
+  (defmacro with-db [#* body]
+    `(with [db (hy.I.thoughtforms/db.connect
+        self.db-path
+        self.sqlite-timeout-seconds)]
+      ~@body))
+
   (meth dval [k [default Sentinel]]
     "Return the value for the requested data item. If `default` isn't provided,
     `KeyError` is raised for a missing key."
@@ -66,6 +72,23 @@
     (if (or (is default Sentinel) (in k @data))
       (. @data [k] v)
       default))
+
+  (meth setd [k v]
+    "Set a data item. If the item named by `k` already exists, the
+    value is untouched. If `v` is callable, it's called if a value is
+    needed. Return the value (whether newly set or preserved)."
+    (setv k (hy.mangle k))
+    (unless (in k @data)
+      (when (callable v)
+        (setv v (v)))
+      (setv t (@time))
+      (setv (get @data k) (TaskDataRecord v t t))
+      (with-db (.execute db
+        "insert or ignore into TaskData
+            (subject, k, v, first_sent_time, received_time)
+            values (?, ?, jsonb(?), ?, ?)"
+        [@subject k (json.dumps v :separators ",:") t t])))
+    (. @data [k] v))
 
   (meth [classmethod] run [callback #* args #** kwargs]
     "Make a new task and run it with the given callback. Other
@@ -83,12 +106,6 @@
     (or
       @mock-time
       (int (hy.I.time.time))))
-
-  (defmacro with-db [#* body]
-    `(with [db (hy.I.thoughtforms/db.connect
-        self.db-path
-        self.sqlite-timeout-seconds)]
-      ~@body))
 
   (meth consent-form []
     "Show the consent form. This should be called before any other
@@ -183,20 +200,12 @@
   (meth shuffle [k iterable]
     "Return a tuple giving the elements of `iterable` in a random order.
     The permutation is randomized per-subject and saved to `k`."
-
-    (setv k (hy.mangle k))
     (setv iterable (tuple iterable))
-    (unless (in k @data)
-      (setv t (@time))
-      (setv v (hy.I.random.randrange
-        (hy.I.math.factorial (len iterable))))
-      (setv (get @data k) (TaskDataRecord v t t))
-      (with-db (.execute db
-        "insert or ignore into TaskData
-            (subject, k, v, first_sent_time, received_time)
-            values (?, ?, jsonb(?), ?, ?)"
-        [@subject k (json.dumps v :separators ",:") t t])))
-    (nth-permutation iterable (len iterable) (@dval k)))
+    (nth-permutation
+      :iterable iterable
+      :r (len iterable)
+      :index (@setd k (fn [] (hy.I.random.randrange
+        (hy.I.math.factorial (len iterable)))))))
 
 ;; *** Page types
 

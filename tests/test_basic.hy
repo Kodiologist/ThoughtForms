@@ -6,6 +6,7 @@
 (import
   re
   json
+  unittest.mock [Mock]
   lxml.html [document-fromstring :as as-html]
   mechanicalsoup
   werkzeug
@@ -276,6 +277,37 @@
   ; Check the other `dval` elements.
   (assert (= (:failed1 dvals) "default_value"))
   (assert (= (:failed2 dvals) "KeyError")))
+
+
+(defn test-setd [tasker]
+
+  (setv m (Mock))
+  (defn callback []
+    (m)
+    5)
+
+  (setv tasker.callback (fn [task page]
+    (.consent-form task)
+
+    (assert (= (.setd task "apple" 1) 1))
+    (assert (= (.setd task "apple" 2) 1))
+    (assert (= (.dval task "apple") 1))
+
+    (assert (= (.setd task "banana" callback) 5))
+    (assert (= (.setd task "banana" callback) 5))
+    (assert (= m.call-count 1))
+
+    (page 'continue "cpage"
+      (E.p "Hello, world!"))))
+
+  (run-task)
+  (assert (in
+    "Hello, world!"
+    (run-task
+      (.set form "consent-statement" "i consent"))))
+  (assert (in
+    "Hello, world!"
+    (run-task))))
 
 
 (defn
